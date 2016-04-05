@@ -1,0 +1,22 @@
+Users:
+  ✔ Get all Users @done(2016-04-04 19:23) @project(Users)
+  ✔ Get Options @done(2016-04-04 23:29) @project(Users)
+  ✔ Post a user @done(2016-04-04 19:23) @project(Users)
+  ✔ Get a user @done(2016-04-04 23:29) @project(Users)
+  ✔ Put a user @done(2016-04-04 23:29) @project(Users)
+  ✔ Delete a user @done(2016-04-04 23:54) @project(Users)
+  ✔ Ensure Unique email @done(2016-04-04 19:22) @project(Users)
+Tasks:
+  ☐ Get all tasks
+  ☐ Get Options
+  ☐ Post a task
+  ☐ Get a task
+  ☐ Put a task
+  ☐ Delete a task
+Misc:
+  ☐ Check status codes
+  ☐ Verify filters
+  ☐ Add messages
+  ☐ Propogate adding tasks to user (Add to pending tasks)
+  ☐ Delete user => All of that user's tasks unassigned
+  ☐ Delete task => Remove from user's pending tasks
