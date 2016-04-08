@@ -43,50 +43,20 @@ function getParam(param) {
   return eval("("+param+")");
 }
 
-//Llama route
-var llamasRoute = router.route('/llamas');
-
-llamasRoute.post(function(req, res) {
-	var llama = new Llama();
-	llama.name = req.body.name;
-	llama.height = req.body.height;
-
-	llama.save(function(err){
-		if(err)
-			res.send(err);
-		res.json({message: 'llama added to the datamase!', data: llama});
-	});
-});
-
-llamasRoute.get(function(req, res) {
-	// var sort = eval("("+req.query.sort+")");
-	Llama.find()
-	.sort(getParam(req.query.sort))
-	.exec(function(err, llamas) {
-		if(err)
-			res.send(err);
-		res.json(llamas);
-	});
-  // res.json([{ "name": "alice", "height": 12 }, { "name": "jane", "height": 13 }]);
-});
-
-var llamaRoute = router.route('/llamas/:llama-id');
-
-llamaRoute.get(function(req, res) {
-	Llama.findById(req.params.llama_id, function(err, llama) {
-		if(err) res.send(err);
-		res.json(llama);
-	});
-});
-
-llamaRoute.delete(function(req, res) {
-	Llama.findByIdAndRemove(req.params.llama_id, function(err) {
-		if(err) res.send(err);
-		res.json({message: 'Llama deleted from the database'});
-	});
-});
-
-//Add more routes here
+function assembleError(err) {
+  var msg = 'Error: ';
+  //1 error
+  if(!err.errors) {
+    msg += err.message;
+  }
+  //Multiple errors
+  else {
+    for(var key in err.errors) {
+      msg += err.errors[key].message + ' ';
+    }
+  }
+  return msg;
+}
 
 //Users
 
@@ -99,7 +69,7 @@ usersRoute.get(function(req, res) {
     .exec(function(err, count) {
       if(err) {
         res.status(500);
-        res.send(err);
+        res.json({message: assembleError(err), data: []});
       }
       res.json({"message": "OK", "data": count});
     });
@@ -113,7 +83,7 @@ usersRoute.get(function(req, res) {
     .exec(function(err, users) {
       if(err) {
         res.status(500);
-        res.send(err);
+        res.json({message: assembleError(err), data: []});
       }
       else res.json({"message": "OK", "data": users});
     });
@@ -124,16 +94,14 @@ usersRoute.post(function(req, res) {
   var user = new User();
   user.name = req.body.name;
   user.email = req.body.email;
-  user.dateCreated = new Date();
-  user.pendingTasks = [];
   user.save(function(err) {
     if(err) {
-      //Duplicate email
       res.status(500);
+      //Duplicate email
       if(err.code == 11000) {
         res.json({message: 'Email already exists', data: []});
       } else {
-        res.send(err);
+        res.json({message: assembleError(err), data: []});
       }
     } else {
       res.status(201);
@@ -151,22 +119,42 @@ var userRoute = router.route('/users/:id');
 userRoute.get(function(req, res) {
   User.findById(req.params.id, function(err, user) {
 		if(err) {
+      res.status(500);
+      res.json({message: assembleError(err), data: []});
+    }
+    else if(!user) {
       res.status(404);
       res.json({message: 'User not found', data: []});
-    } else {
+    }
+    else {
       res.json({message: 'OK', data: user});
     }
   });
 });
 userRoute.put(function(req, res) {
-  User.findOneAndUpdate({_id: req.params.id}, req.body, function(err, user) {
+  //Check for required inputs. Validators do not work for findOneAndUpdate, unfortunately
+  if(!req.body.name || !req.body.email) {
+    var msg = 'Validation Error: ';
+    if(!req.body.name) msg += 'name is required. ';
+    if(!req.body.email) msg += 'email is required. ';
+    res.json({message: msg, data: []});
+    return;
+  }
+  User.findOneAndUpdate({_id: req.params.id}, req.body, {select: 'name email pendingTasks',
+                        new: true, overwrite: true}, function(err, user) {
     if(err) {
+      //Duplicate email
       if(err.code == 11000) {
         res.status(500);
         res.json({message: 'Email already exists', data: []});
-      } else {
+      }
+      //Handle object not found
+      else if(err.kind == 'ObjectId') {
         res.status(404);
-        res.json({message: 'User not found', data: []});
+        res.json({message: 'Task not found', data: []});
+      } else {
+        res.status(500);
+        res.json({message: assembleError(err), data: []});
       }
     } else {
       res.status(200);
@@ -176,7 +164,11 @@ userRoute.put(function(req, res) {
 });
 userRoute.delete(function(req, res) {
   User.findByIdAndRemove(req.params.id, function(err, user) {
-    if(!user) { //No user was found
+    if(err) {
+      res.status(500);
+      res.json({message: assembleError(err), data: []});
+    }
+    else if(!user) { //No user was found
       res.status(404);
       res.json({message: 'User not found', data: []});
     } else {
@@ -186,6 +178,117 @@ userRoute.delete(function(req, res) {
 });
 
 //Tasks
+
+var tasksRoute = router.route('/tasks');
+
+tasksRoute.get(function(req, res) {
+  //Count
+  if(req.query.count) {
+    Task.count(getParam(req.query.where))
+    .exec(function(err, count) {
+      if(err) {
+        res.status(500);
+        res.json({message: assembleError(err), data: []});
+      }
+      res.json({"message": "OK", "data": count});
+    });
+  }
+  else {
+    Task.find(getParam(req.query.where))
+    .limit(req.query.limit)
+    .skip(req.query.skip)
+    .sort(getParam(req.query.sort))
+    .select(getParam(req.query.select))
+    .exec(function(err, tasks) {
+      if(err) {
+        res.status(500);
+        res.json({message: assembleError(err), data: []});
+      }
+      else res.json({"message": "OK", "data": tasks});
+    });
+  }
+});
+tasksRoute.post(function(req, res) {
+  //Check already in database
+  var task = new Task();
+  task.name = req.body.name;
+  task.deadline = req.body.deadline;
+  task.description = req.body.description;
+  task.assignedUser = req.body.assignedUser;
+  task.assignedUserName = req.body.assignedUserName;
+  task.save(function(err) {
+    if(err) {
+      res.status(500);
+      res.json({message: assembleError(err), data: []});
+    } else {
+      res.status(201);
+      res.json({message: 'Task added to database', data: task});
+    }
+  });
+});
+tasksRoute.options(function(req, res){
+      res.writeHead(200);
+      res.end();
+});
+
+var taskRoute = router.route('/tasks/:id');
+
+taskRoute.get(function(req, res) {
+  Task.findById(req.params.id, function(err, task) {
+    if(err) {
+      res.status(500);
+      res.json({message: assembleError(err), data: []});
+    }
+    else if(!task) {
+      res.status(404);
+      res.json({message: 'Task not found', data: []});
+    }
+     else {
+      res.json({message: 'OK', data: task});
+    }
+  });
+});
+taskRoute.put(function(req, res) {
+  //Check for required inputs. Validators do not work for findOneAndUpdate, unfortunately
+  if(!req.body.name || !req.body.deadline) {
+    var msg = 'Validation Error: ';
+    if(!req.body.name) msg += 'name is required. ';
+    if(!req.body.deadline) msg += 'deadline is required. ';
+    res.json({message: msg, data: []});
+    return;
+  }
+  //Use select to replace all but dateCreated
+  Task.findOneAndUpdate({_id: req.params.id}, req.body, {select: 'name description deadline assignedUser assignedUserName completed',
+                        new: true, overwrite: true}, function(err, task) {
+    if(err) {
+      //Handle object not found
+      if(err.kind == 'ObjectId') {
+        res.status(404);
+        res.json({message: 'Task not found', data: []});
+      } else {
+        res.status(500);
+        res.json({message: assembleError(err), data: []});
+      }
+    } else {
+      res.status(200);
+      res.json({message: "Task updated", data: task});
+    }
+  });
+});
+taskRoute.delete(function(req, res) {
+  Task.findByIdAndRemove(req.params.id, function(err, task) {
+    if(err) {
+      res.status(500);
+      res.json({message: assembleError(err), data: []});
+    }
+    else if(!task) { //No task was found
+      res.status(404);
+      res.json({message: 'Task not found', data: []});
+    } else {
+      res.json({message: 'Task deleted', data: []});
+    }
+  });
+});
 
 // Start the server
 app.listen(port);

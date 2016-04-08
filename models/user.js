@@ -1,9 +1,9 @@
 var mongoose = require('mongoose');
 
 var UserSchema = new mongoose.Schema({
-  name: String,
-  email: {type: String},
-  dateCreated: Date,
+  name: {type: String, required: true},
+  email: {type: String, required: true},
+  dateCreated: {type: Date, default: Date.now},
   pendingTasks: [String]
 });
 
