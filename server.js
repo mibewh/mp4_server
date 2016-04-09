@@ -17,10 +17,17 @@ var app = express();
 var port = process.env.PORT || 4000;
 
 //Allow CORS so that backend and frontend could pe put on different servers
+// app.use(express.methodOverride());
 var allowCrossDomain = function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
   res.header("Access-Control-Allow-Headers", "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept");
-  next();
+  if('OPTIONS' == req.method) {
+    res.sendStatus(200);
+  }
+  else{
+    next();
+  }
 };
 app.use(allowCrossDomain);
 
@@ -28,6 +35,7 @@ app.use(allowCrossDomain);
 app.use(bodyParser.urlencoded({
   extended: true
 }));
+app.use(bodyParser.json());
 
 // All our routes will start with /api
 app.use('/api', router);
@@ -177,6 +185,10 @@ userRoute.delete(function(req, res) {
     }
   });
 });
+userRoute.options(function(req, res){
+      res.writeHead(200);
+      res.end();
+});
 
 //Tasks
 
@@ -289,6 +301,10 @@ taskRoute.delete(function(req, res) {
       res.json({message: 'Task deleted', data: []});
     }
   });
+});
+taskRoute.options(function(req, res){
+      res.writeHead(200);
+      res.end();
 });
 
 // Start the server
