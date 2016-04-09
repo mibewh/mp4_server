@@ -141,7 +141,7 @@ def main(argv):
             assignedUserTasks.append(taskID)
 
             # PUT in the user
-            params = urllib.urlencode({'_id': assignedUserID, 'name': assignedUserName, 'email': assignedUserEmail, 'dateCreated': assignedUserDate, 'pendingTasks': assignedUserTasks})
+            params = urllib.urlencode({'_id': assignedUserID, 'name': assignedUserName, 'email': assignedUserEmail, 'dateCreated': assignedUserDate, 'pendingTasks': assignedUserTasks}, True)
             conn.request("PUT", "/api/users/"+assignedUserID, params, headers)
             response = conn.getresponse()
             data = response.read()

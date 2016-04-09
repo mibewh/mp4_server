@@ -137,10 +137,11 @@ userRoute.put(function(req, res) {
     var msg = 'Validation Error: ';
     if(!req.body.name) msg += 'name is required. ';
     if(!req.body.email) msg += 'email is required. ';
+    res.status(500);
     res.json({message: msg, data: []});
     return;
   }
-  User.findOneAndUpdate({_id: req.params.id}, req.body, {select: 'name email pendingTasks',
+  User.findByIdAndUpdate(req.params.id, req.body, {select: 'name email pendingTasks',
                         new: true, overwrite: true}, function(err, user) {
     if(err) {
       //Duplicate email
@@ -254,21 +255,21 @@ taskRoute.put(function(req, res) {
     var msg = 'Validation Error: ';
     if(!req.body.name) msg += 'name is required. ';
     if(!req.body.deadline) msg += 'deadline is required. ';
+    res.status(500);
     res.json({message: msg, data: []});
     return;
   }
   //Use select to replace all but dateCreated
-  Task.findOneAndUpdate({_id: req.params.id}, req.body, {select: 'name description deadline assignedUser assignedUserName completed',
+  Task.findByIdAndUpdate(req.params.id, req.body, {select: 'name description deadline assignedUser assignedUserName completed',
                         new: true, overwrite: true}, function(err, task) {
-    if(err) {
-      //Handle object not found
-      if(err.kind == 'ObjectId') {
-        res.status(404);
-        res.json({message: 'Task not found', data: []});
-      } else {
-        res.status(500);
-        res.json({message: assembleError(err), data: []});
-      }
+    //Handle object not found
+    if(!task) {
+      res.status(404);
+      res.json({message: 'Task not found', data: []});
+    }
+    else if(err) {
+      res.status(500);
+      res.json({message: assembleError(err), data: []});
     } else {
       res.status(200);
       res.json({message: "Task updated", data: task});

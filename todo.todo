@@ -18,9 +18,11 @@ Tasks:
   ✔ Delete a task @done(2016-04-08 02:10) @project(Tasks)
 Misc:
   ✔ Updates should replace nonspecified attributes with defaults (except dateCreated) @done(2016-04-08 02:04) @project(Misc)
-  ☐ Check status codes
-  ☐ Verify filters
+  ✔ Check status codes @done(2016-04-08 04:05) @project(Misc)
   ✔ Add messages @done(2016-04-08 02:05) @project(Misc)
-  ☐ Propogate adding tasks to user (Add to pending tasks)
-  ☐ Delete user => All of that user's tasks unassigned
-  ☐ Delete task => Remove from user's pending tasks
+  ☐ Fill the database
+  ☐ Verify filters
+  ✔ Remove rippling? (Maybe supposed to be done client side for some reason) @done(2016-04-09 02:36) @project(Misc)
+  ✔ Propogate adding tasks to user (Add to pending tasks) @done(2016-04-08 03:27) @project(Misc)
+  ✔ Delete user => All of that user's tasks unassigned @done(2016-04-08 16:09) @project(Misc)
+  ✔ Delete task => Remove from user's pending tasks @done(2016-04-08 03:34) @project(Misc)
